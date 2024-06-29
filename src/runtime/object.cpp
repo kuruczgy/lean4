@@ -55,7 +55,7 @@ static void abort_on_panic() {
 }
 
 extern "C" LEAN_EXPORT void lean_internal_panic(char const * msg) {
-    std::cerr << "INTERNAL PANIC: " << msg << "\n";
+    fprintf(stderr, "INTERNAL PANIC: %s\n", msg);
     abort_on_panic();
     std::exit(1);
 }
@@ -89,21 +89,21 @@ static void print_backtrace() {
     int nptrs = backtrace(bt_buf, sizeof(bt_buf) / sizeof(void *));
     backtrace_symbols_fd(bt_buf, nptrs, STDERR_FILENO);
     if (nptrs == sizeof(bt_buf)) {
-        std::cerr << "...\n";
+        fprintf(stderr, "...\n");
     }
 #else
-    std::cerr << "(stack trace unavailable)\n";
+    fprintf(stderr, "(stack trace unavailable)\n");
 #endif
 }
 
 extern "C" LEAN_EXPORT object * lean_panic_fn(object * default_val, object * msg) {
     // TODO(Leo, Kha): add thread local buffer for interpreter.
     if (g_panic_messages) {
-        std::cerr << lean_string_cstr(msg) << "\n";
+        fprintf(stderr, "%s\n", lean_string_cstr(msg));
 #ifdef __GLIBC__
         char * bt_env = getenv("LEAN_BACKTRACE");
         if (!bt_env || strcmp(bt_env, "0") != 0) {
-            std::cerr << "backtrace:\n";
+            fprintf(stderr, "backtrace:\n");
             print_backtrace();
         }
 #endif
@@ -123,11 +123,11 @@ extern "C" LEAN_EXPORT object * lean_sorry(uint8) {
 }
 
 extern "C" LEAN_EXPORT void lean_inc_ref_cold(lean_object * o) {
-    std::atomic_fetch_sub_explicit(lean_get_rc_mt_addr(o), 1, std::memory_order_relaxed);
+    *(lean_get_rc_mt_addr(o)) -= 1;
 }
 
 extern "C" LEAN_EXPORT void lean_inc_ref_n_cold(lean_object * o, unsigned n) {
-    std::atomic_fetch_sub_explicit(lean_get_rc_mt_addr(o), (int)n, std::memory_order_relaxed);
+    *(lean_get_rc_mt_addr(o)) -= (int)n;
 }
 
 extern "C" LEAN_EXPORT size_t lean_object_byte_size(lean_object * o) {
@@ -215,7 +215,7 @@ static inline void dec(lean_object * o, lean_object* & todo) {
         push_back(todo, o);
     } else if (o->m_rc == 0) {
         return;
-    } else if (std::atomic_fetch_add_explicit(lean_get_rc_mt_addr(o), 1, std::memory_order_acq_rel) == -1) {
+    } else if ((*lean_get_rc_mt_addr(o) += 1) == 0) {
         push_back(todo, o);
     }
 }
@@ -300,7 +300,7 @@ static void lean_del_core(object * o, object * & todo) {
 }
 
 extern "C" LEAN_EXPORT void lean_dec_ref_cold(lean_object * o) {
-    if (o->m_rc == 1 || std::atomic_fetch_add_explicit(lean_get_rc_mt_addr(o), 1, std::memory_order_acq_rel) == -1) {
+    if (o->m_rc == 1 || (*lean_get_rc_mt_addr(o) += 1) == 0) {
 #ifdef LEAN_LAZY_RC
         push_back(g_to_free, o);
 #else
@@ -367,7 +367,8 @@ extern "C" LEAN_EXPORT lean_obj_res lean_array_set_panic(lean_obj_arg a, lean_ob
 // Thunks
 
 extern "C" LEAN_EXPORT b_obj_res lean_thunk_get_core(b_obj_arg t) {
-    object * c = lean_to_thunk(t)->m_closure.exchange(nullptr);
+    object * c = lean_to_thunk(t)->m_closure;
+    lean_to_thunk(t)->m_closure = nullptr;
     if (c != nullptr) {
         /* Recall that a closure uses the standard calling convention.
            `thunk_get` "consumes" the result `r` by storing it at `to_thunk(t)->m_value`.

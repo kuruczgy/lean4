@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Leonardo de Moura
 */
 #include <memory.h>
-#include <iostream>
 #include "runtime/thread.h"
 #include "runtime/exception.h"
 #include "runtime/stackinfo.h"
@@ -26,7 +25,7 @@ Author: Leonardo de Moura
 
 namespace lean {
 void throw_get_stack_size_failed() {
-    throw exception("failed to retrieve thread stack size");
+    abort();
 }
 
 #if defined(LEAN_WINDOWS)
@@ -62,11 +61,7 @@ size_t get_stack_size(bool main) {
 size_t get_stack_size(bool main) {
     if (main) {
         // Retrieve stack size of the main thread.
-        struct rlimit curr;
-        if (getrlimit(RLIMIT_STACK, &curr) != 0) {
-            throw_get_stack_size_failed();
-        }
-        return curr.rlim_cur;
+        return 0;
     } else {
         return lthread::get_thread_stack_size();
     }
@@ -107,7 +102,7 @@ size_t get_available_stack_size() {
 
 // separate definition to allow breakpoint in debugger
 void throw_stack_space_exception(char const * component_name) {
-    throw stack_space_exception(component_name);
+    abort();
 }
 
 void check_stack(char const * component_name) {

@@ -212,7 +212,7 @@ template<typename T> T get_except_value(obj_arg o) {
     } else {
         std::string err = string_to_std(cnstr_get(o, 0));
         dec(o);
-        throw exception(err);
+        abort();
     }
 }
 

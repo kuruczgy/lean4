@@ -12,7 +12,6 @@ Author: Leonardo de Moura
 #include "runtime/mpn.h"
 #endif
 #include <string>
-#include <iostream>
 #include <limits>
 #include <lean/lean.h>
 #include "runtime/int64.h"

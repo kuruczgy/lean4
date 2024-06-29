@@ -13,10 +13,6 @@ Author: Leonardo de Moura
 #include "runtime/hash.h"
 #include "runtime/compact.h"
 
-#ifndef LEAN_WINDOWS
-#include <sys/mman.h>
-#endif
-
 #define LEAN_COMPACTOR_INIT_SZ 1024*1024
 #define LEAN_MAX_SHARING_TABLE_INITIAL_SIZE 1024*1024
 

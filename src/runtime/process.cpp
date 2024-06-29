@@ -5,9 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Jared Roesch
 */
 #include <string>
-#include <fstream>
-#include <iostream>
-#include <iomanip>
 #include <utility>
 #include <system_error>
 
@@ -274,133 +271,10 @@ extern "C" LEAN_EXPORT obj_res lean_io_process_child_wait(b_obj_arg, b_obj_arg c
 }
 
 extern "C" LEAN_EXPORT obj_res lean_io_process_child_kill(b_obj_arg, b_obj_arg child, obj_arg) {
-    static_assert(sizeof(pid_t) == sizeof(uint32), "pid_t is expected to be a 32-bit type"); // NOLINT
-    pid_t pid = cnstr_get_uint32(child, 3 * sizeof(object *));
-    bool setsid = cnstr_get_uint8(child, 3 * sizeof(object *) + sizeof(pid_t));
-    if ((setsid ? killpg(pid, SIGKILL) : kill(pid, SIGKILL)) == -1) {
-        return io_result_mk_error(decode_io_error(errno, nullptr));
-    }
-    return lean_io_result_mk_ok(box(0));
+    return io_result_mk_error("unsupported");
 }
 
 struct pipe { int m_read_fd; int m_write_fd; };
-
-static optional<pipe> setup_stdio(stdio cfg) {
-    /* Setup stdio based on process configuration. */
-    switch (cfg) {
-    case stdio::INHERIT:
-        /* We should need to do nothing in this case */
-        return optional<pipe>();
-    case stdio::PIPED:
-        int fds[2];
-#ifdef __APPLE__
-        // this is inherently racy, but there is nothing we can do on MacOS
-        if (::pipe(fds) == -1) { throw errno; }
-        if (::fcntl(fds[0], F_SETFD, FD_CLOEXEC)) { throw errno; }
-        if (::fcntl(fds[1], F_SETFD, FD_CLOEXEC)) { throw errno; }
-#else
-        if (::pipe2(fds, O_CLOEXEC) == -1) { throw errno; }
-#endif
-        return optional<pipe>(pipe { fds[0], fds[1] });
-    case stdio::NUL:
-        /* We should map /dev/null. */
-        return optional<pipe>();
-    }
-    lean_unreachable();
-}
-
-static obj_res spawn(string_ref const & proc_name, array_ref<string_ref> const & args, stdio stdin_mode, stdio stdout_mode,
-  stdio stderr_mode, option_ref<string_ref> const & cwd, array_ref<pair_ref<string_ref, option_ref<string_ref>>> const & env,
-  bool do_setsid) {
-    /* Setup stdio based on process configuration. */
-    auto stdin_pipe  = setup_stdio(stdin_mode);
-    auto stdout_pipe = setup_stdio(stdout_mode);
-    auto stderr_pipe = setup_stdio(stderr_mode);
-
-    int pid = fork();
-
-    if (pid == 0) {
-        for (auto & entry : env) {
-            if (entry.snd()) {
-                setenv(entry.fst().data(), entry.snd().get()->data(), true);
-            } else {
-                unsetenv(entry.fst().data());
-            }
-        }
-
-        if (stdin_pipe) {
-            dup2(stdin_pipe->m_read_fd, STDIN_FILENO);
-            close(stdin_pipe->m_write_fd);
-        } else if (stdin_mode == stdio::NUL) {
-            int fd = open("/dev/null", O_RDONLY);
-            dup2(fd, STDIN_FILENO);
-        }
-
-        if (stdout_pipe) {
-            dup2(stdout_pipe->m_write_fd, STDOUT_FILENO);
-            close(stdout_pipe->m_read_fd);
-        } else if (stdout_mode == stdio::NUL) {
-            int fd = open("/dev/null", O_WRONLY);
-            dup2(fd, STDOUT_FILENO);
-        }
-
-        if (stderr_pipe) {
-            dup2(stderr_pipe->m_write_fd, STDERR_FILENO);
-            close(stderr_pipe->m_read_fd);
-        } else if (stderr_mode == stdio::NUL) {
-            int fd = open("/dev/null", O_WRONLY);
-            dup2(fd, STDERR_FILENO);
-        }
-
-        if (cwd) {
-            if (chdir(cwd.get()->data()) < 0) {
-                std::cerr << "could not change directory to " << cwd.get()->data() << std::endl;
-                exit(-1);
-            }
-        }
-
-        if (do_setsid) {
-            lean_always_assert(setsid() >= 0);
-        }
-
-        buffer<char *> pargs;
-        pargs.push_back(strdup(proc_name.data()));
-        for (auto & arg : args)
-            pargs.push_back(strdup(arg.data()));
-        pargs.push_back(NULL);
-
-        if (execvp(pargs[0], pargs.data()) < 0) {
-            std::cerr << "could not execute external process '" << pargs[0] << "'" << std::endl;
-            exit(-1);
-        }
-    } else if (pid == -1) {
-        throw errno;
-    }
-
-    object * parent_stdin  = box(0);
-    object * parent_stdout = box(0);
-    object * parent_stderr = box(0);
-    if (stdin_pipe) {
-        close(stdin_pipe->m_read_fd);
-        parent_stdin = io_wrap_handle(fdopen(stdin_pipe->m_write_fd, "w"));
-    }
-
-    if (stdout_pipe) {
-        close(stdout_pipe->m_write_fd);
-        parent_stdout = io_wrap_handle(fdopen(stdout_pipe->m_read_fd, "r"));
-    }
-
-    if (stderr_pipe) {
-        close(stderr_pipe->m_write_fd);
-        parent_stderr = io_wrap_handle(fdopen(stderr_pipe->m_read_fd, "r"));
-    }
-
-    object_ref r = mk_cnstr(0, parent_stdin, parent_stdout, parent_stderr, sizeof(pid_t) + sizeof(uint8_t));
-    static_assert(sizeof(pid_t) == sizeof(uint32), "pid_t is expected to be a 32-bit type"); // NOLINT
-    cnstr_set_uint32(r.raw(), 3 * sizeof(object *), pid);
-    cnstr_set_uint8(r.raw(), 3 * sizeof(object *) + sizeof(pid_t), do_setsid);
-    return lean_io_result_mk_ok(r.steal());
-}
 
 extern "C" LEAN_EXPORT obj_res lean_io_process_child_take_stdin(b_obj_arg, obj_arg lchild, obj_arg) {
     object_ref child(lchild);
@@ -418,30 +292,7 @@ void finalize_process() {}
 extern "C" lean_object* lean_mk_io_error_other_error(uint32_t, lean_object*);
 
 extern "C" LEAN_EXPORT obj_res lean_io_process_spawn(obj_arg args_, obj_arg) {
-    object_ref args(args_);
-    object_ref stdio_cfg = cnstr_get_ref(args, 0);
-    stdio stdin_mode  = static_cast<stdio>(cnstr_get_uint8(stdio_cfg.raw(), 0));
-    stdio stdout_mode = static_cast<stdio>(cnstr_get_uint8(stdio_cfg.raw(), 1));
-    stdio stderr_mode = static_cast<stdio>(cnstr_get_uint8(stdio_cfg.raw(), 2));
-    if (stdin_mode == stdio::INHERIT) {
-        std::cout.flush();
-    }
-    try {
-        return spawn(
-                cnstr_get_ref_t<string_ref>(args, 1),
-                cnstr_get_ref_t<array_ref<string_ref>>(args, 2),
-                stdin_mode,
-                stdout_mode,
-                stderr_mode,
-                cnstr_get_ref_t<option_ref<string_ref>>(args, 3),
-                cnstr_get_ref_t<array_ref<pair_ref<string_ref, option_ref<string_ref>>>>(args, 4),
-                cnstr_get_uint8(args.raw(), 5 * sizeof(object *)));
-    } catch (int err) {
-        return lean_io_result_mk_error(decode_io_error(err, nullptr));
-    } catch (std::system_error const & err) {
-        // TODO: decode
-        return lean_io_result_mk_error(lean_mk_io_error_other_error(err.code().value(), mk_string(err.code().message())));
-    }
+    return io_result_mk_error("unsupported");
 }
 
 }

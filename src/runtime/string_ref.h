@@ -6,7 +6,6 @@ Author: Leonardo de Moura
 */
 #pragma once
 #include <string>
-#include "runtime/sstream.h"
 #include "runtime/object_ref.h"
 #include "runtime/list_ref.h"
 namespace lean {
@@ -15,7 +14,6 @@ class string_ref : public object_ref {
 public:
     explicit string_ref(char const * s):object_ref(mk_string(s)) {}
     explicit string_ref(std::string const & s):object_ref(mk_string(s)) {}
-    explicit string_ref(sstream const & strm):string_ref(strm.str()) {}
     string_ref(string_ref const & other):object_ref(other) {}
     string_ref(string_ref && other):object_ref(other) {}
     explicit string_ref(obj_arg o):object_ref(o) {}

@@ -11,7 +11,6 @@ Author: Leonardo de Moura
 #include "lean/lean.h"
 
 namespace lean {
-class sstream;
 /** \brief Base class for all Lean exceptions */
 class LEAN_EXPORT throwable : public std::exception {
 protected:
@@ -20,7 +19,6 @@ protected:
 public:
     throwable(char const * msg);
     throwable(std::string const & msg);
-    throwable(sstream const & strm);
     virtual ~throwable() noexcept;
     virtual char const * what() const noexcept;
 };
@@ -33,7 +31,6 @@ protected:
 public:
     exception(char const * msg):throwable(msg) {}
     exception(std::string const & msg):throwable(msg) {}
-    exception(sstream const & strm):throwable(strm) {}
 };
 
 /** \brief Exception used to sign that a computation was interrupted */

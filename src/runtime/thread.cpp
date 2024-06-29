@@ -6,18 +6,11 @@ Author: Leonardo de Moura
 */
 #include <utility>
 #include <vector>
-#include <iostream>
-#ifdef LEAN_WINDOWS
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
 #include <lean/config.h>
 #include "runtime/thread.h"
 #include "runtime/interrupt.h"
 #include "runtime/exception.h"
 #include "runtime/alloc.h"
-#include "runtime/stack_overflow.h"
 
 #ifndef LEAN_DEFAULT_THREAD_STACK_SIZE
 #define LEAN_DEFAULT_THREAD_STACK_SIZE 8*1024*1024 // 8Mb
@@ -55,17 +48,6 @@ extern "C" LEAN_EXPORT void lean_initialize_thread() {
 extern "C" LEAN_EXPORT void lean_finalize_thread() {
     run_thread_finalizers();
     run_post_thread_finalizers();
-}
-
-static void thread_main(void * p) {
-    lean_initialize_thread();
-    std::unique_ptr<runnable> f;
-    f.reset(reinterpret_cast<runnable *>(p));
-
-    (*f)();
-    f.reset();
-
-    lean_finalize_thread();
 }
 
 #if defined(LEAN_MULTI_THREAD)
@@ -121,7 +103,6 @@ struct lthread::imp {
     bool                      m_joined = false;
 
     static void * _main(void * p) {
-        stack_guard guard;
         thread_main(p);
         return nullptr;
     }

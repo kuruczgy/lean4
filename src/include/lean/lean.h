@@ -9,11 +9,12 @@ Author: Leonardo de Moura
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 #include <atomic>
 #include <stdlib.h>
-#define _Atomic(t) std::atomic<t>
+#define _Atomic(t) t
 #define LEAN_USING_STD using namespace std; /* NOLINT */
 extern "C" {
 #else
@@ -25,11 +26,7 @@ extern "C" {
 #define LEAN_OBJECT_SIZE_DELTA     8
 #define LEAN_MAX_SMALL_OBJECT_SIZE 4096
 
-#ifdef _MSC_VER
-#define LEAN_ALLOCA(s) _alloca(s)
-#else
-#define LEAN_ALLOCA(s) alloca(s)
-#endif
+#define LEAN_ALLOCA(s) __builtin_alloca(s)
 
 #if defined(__GNUC__) || defined(__clang__)
 #define LEAN_UNLIKELY(x) (__builtin_expect((x), 0))
@@ -45,8 +42,8 @@ extern "C" {
 #ifdef NDEBUG
 #define assert(expr)
 #else
-void lean_notify_assert(const char * fileName, int line, const char * condition);
-#define assert(expr) { if (LEAN_UNLIKELY(!(expr))) lean_notify_assert(__FILE__, __LINE__, #expr); }
+// void lean_notify_assert(const char * fileName, int line, const char * condition);
+#define assert(expr) { if (LEAN_UNLIKELY(!(expr))) abort(); }
 #endif
 #endif
 

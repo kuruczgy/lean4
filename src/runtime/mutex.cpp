@@ -51,10 +51,7 @@ extern "C" LEAN_EXPORT obj_res lean_io_condvar_new(obj_arg) {
 }
 
 extern "C" LEAN_EXPORT obj_res lean_io_condvar_wait(b_obj_arg condvar, b_obj_arg mtx, obj_arg) {
-    unique_lock<mutex> lock(*basemutex_get(mtx), std::adopt_lock_t());
-    condvar_get(condvar)->wait(lock);
-    lock.release();
-    return io_result_mk_ok(box(0));
+    return io_result_mk_error("unsupported");
 }
 
 extern "C" LEAN_EXPORT obj_res lean_io_condvar_notify_one(b_obj_arg condvar, obj_arg) {

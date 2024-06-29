@@ -1,7 +1,7 @@
-set(RUNTIME_OBJS debug.cpp thread.cpp mpz.cpp utf8.cpp
+set(RUNTIME_OBJS thread.cpp mpz.cpp utf8.cpp
 object.cpp apply.cpp exception.cpp interrupt.cpp memory.cpp
 stackinfo.cpp compact.cpp init_module.cpp load_dynlib.cpp io.cpp hash.cpp
-platform.cpp alloc.cpp allocprof.cpp sharecommon.cpp stack_overflow.cpp
+platform.cpp alloc.cpp sharecommon.cpp
 process.cpp object_ref.cpp mpn.cpp mutex.cpp)
 add_library(leanrt_initial-exec STATIC ${RUNTIME_OBJS})
 set_target_properties(leanrt_initial-exec PROPERTIES

@@ -30,7 +30,7 @@ scope_max_heartbeat::scope_max_heartbeat(size_t max):flet<size_t>(g_max_heartbea
 
 // separate definition to allow breakpoint in debugger
 void throw_heartbeat_exception() {
-    throw heartbeat_exception();
+    abort();
 }
 
 void check_heartbeat() {
@@ -41,7 +41,7 @@ void check_heartbeat() {
 
 void check_interrupted() {
     if (lean_io_check_canceled_core() && !std::uncaught_exception()) {
-        throw interrupted();
+        abort();
     }
 }
 

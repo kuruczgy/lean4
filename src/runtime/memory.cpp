@@ -6,7 +6,6 @@ Author: Leonardo de Moura
 */
 #include <new>
 #include <cstdlib>
-#include <iostream>
 #include "runtime/exception.h"
 #include "runtime/memory.h"
 #include "runtime/thread.h"
@@ -75,13 +74,7 @@ size_t get_current_rss() {
 
 namespace lean {
 size_t get_peak_rss() {
-    struct rusage rusage;
-    getrusage(RUSAGE_SELF, &rusage);
-#if defined(__APPLE__)
-    return static_cast<size_t>(rusage.ru_maxrss);
-#else
-    return static_cast<size_t>(rusage.ru_maxrss) * static_cast<size_t>(1024);
-#endif
+    return 0;
 }
 
 size_t get_current_rss() {
@@ -126,7 +119,7 @@ void set_max_memory_megabyte(unsigned max) {
 
 // separate definition to allow breakpoint in debugger
 void throw_memory_exception(char const * component_name) {
-    throw memory_exception(component_name);
+    abort();
 }
 
 void check_memory(char const * component_name) {

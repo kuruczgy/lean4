@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Leonardo de Moura
 */
 #pragma once
-#include <iostream>
 #include <chrono>
 #include <functional>
 #include <lean/lean.h>
@@ -182,10 +181,10 @@ inline unsigned hardware_concurrency() { return 1; }
 #define LEAN_THREAD_GLOBAL_PTR(T, V) __declspec(thread) T * V = nullptr
 #define LEAN_THREAD_VALUE(T, V, VAL) static __declspec(thread) T V = VAL
 #else
-#define LEAN_THREAD_PTR(T, V) static __thread T * V = nullptr
-#define LEAN_THREAD_EXTERN_PTR(T, V) extern __thread T * V
-#define LEAN_THREAD_GLOBAL_PTR(T, V) __thread T * V = nullptr
-#define LEAN_THREAD_VALUE(T, V, VAL) static __thread T V = VAL
+#define LEAN_THREAD_PTR(T, V) static T * V = nullptr
+#define LEAN_THREAD_EXTERN_PTR(T, V) extern T * V
+#define LEAN_THREAD_GLOBAL_PTR(T, V) T * V = nullptr
+#define LEAN_THREAD_VALUE(T, V, VAL) static T V = VAL
 #endif
 
 #define MK_THREAD_LOCAL_GET(T, GETTER_NAME, DEF_VALUE)                  \

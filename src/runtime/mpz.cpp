@@ -7,7 +7,6 @@ Author: Leonardo de Moura
 #include <memory>
 #include <string>
 #include <cstring>
-#include "runtime/sstream.h"
 #include "runtime/buffer.h"
 #include "runtime/alloc.h"
 #include "runtime/thread.h"
@@ -992,23 +991,5 @@ void gcd(mpz & g, mpz const & a, mpz const & b) {
         }
     }
 }
-
-std::ostream & operator<<(std::ostream & out, mpz const & v) {
-    if (v.m_sign)
-        out << "-";
-    buffer<char, 1024> tmp;
-    tmp.resize(11*v.m_size, 0);
-    out << mpn_to_string(v.m_digits, v.m_size, tmp.begin(), tmp.size());
-    return out;
-}
 #endif
-
-
-std::string mpz::to_string() const {
-    std::ostringstream out;
-    out << *this;
-    return out.str();
 }
-}
-
-void print(lean::mpz const & n) { std::cout << n << std::endl; }

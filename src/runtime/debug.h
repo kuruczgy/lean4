@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Leonardo de Moura
 */
 #pragma once
-#include <iostream>
 #include <typeinfo>
 #include "runtime/exception.h"
 
@@ -14,12 +13,14 @@ Author: Leonardo de Moura
 #endif
 
 #ifdef LEAN_DEBUG
+// TODO
+#error "no debug pls"
 #define DEBUG_CODE(CODE) CODE
 #else
 #define DEBUG_CODE(CODE)
 #endif
 
-#define lean_unreachable() { DEBUG_CODE({lean::notify_assertion_violation(__FILE__, __LINE__, "UNREACHABLE CODE WAS REACHED."); lean::invoke_debugger();}) throw lean::unreachable_reached(); }
+#define lean_unreachable() { DEBUG_CODE({lean::notify_assertion_violation(__FILE__, __LINE__, "UNREACHABLE CODE WAS REACHED."); lean::invoke_debugger();}) abort(); }
 
 #ifdef LEAN_DEBUG
 #define lean_verify(COND) if (LEAN_UNLIKELY(!(COND))) { lean::notify_assertion_violation(__FILE__, __LINE__, #COND); lean::invoke_debugger(); }
@@ -29,7 +30,7 @@ Author: Leonardo de Moura
 
 #define lean_assert(COND) DEBUG_CODE({if (LEAN_UNLIKELY(!(COND))) { lean::notify_assertion_violation(__FILE__, __LINE__, #COND); lean::invoke_debugger(); }})
 #define lean_cond_assert(TAG, COND) DEBUG_CODE({if (lean::is_debug_enabled(TAG) && LEAN_UNLIKELY(!(COND))) { lean::notify_assertion_violation(__FILE__, __LINE__, #COND); lean::invoke_debugger(); }})
-#define lean_always_assert(COND) { if (LEAN_UNLIKELY(!(COND))) { lean::notify_assertion_violation(__FILE__, __LINE__, #COND); lean_unreachable(); } }
+#define lean_always_assert(COND) { if (LEAN_UNLIKELY(!(COND))) { lean_unreachable(); } }
 
 namespace lean {
 void initialize_debug();
