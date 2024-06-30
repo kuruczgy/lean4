@@ -9,12 +9,10 @@ Author: Leonardo de Moura
 #include <stdbool.h>
 #include <stdint.h>
 #include <limits.h>
-#include <stdlib.h>
 
 #ifdef __cplusplus
 #include <atomic>
 #include <stdlib.h>
-#define _Atomic(t) t
 #define LEAN_USING_STD using namespace std; /* NOLINT */
 extern "C" {
 #else
@@ -42,7 +40,6 @@ extern "C" {
 #ifdef NDEBUG
 #define assert(expr)
 #else
-// void lean_notify_assert(const char * fileName, int line, const char * condition);
 #define assert(expr) { if (LEAN_UNLIKELY(!(expr))) abort(); }
 #endif
 #endif
@@ -187,8 +184,8 @@ typedef struct {
 
 typedef struct {
     lean_object            m_header;
-    _Atomic(lean_object *) m_value;
-    _Atomic(lean_object *) m_closure;
+    lean_object * m_value;
+    lean_object * m_closure;
 } lean_thunk_object;
 
 struct lean_task;
@@ -259,7 +256,7 @@ typedef struct {
      * transition: RC becomes 0 ==> freed (`deactivate_task` lock) */
 typedef struct lean_task {
     lean_object            m_header;
-    _Atomic(lean_object *) m_value;
+    lean_object *          m_value;
     lean_task_imp *        m_imp;
 } lean_task_object;
 
@@ -284,10 +281,6 @@ static inline bool lean_is_scalar(lean_object * o) { return ((size_t)(o) & 1) ==
 static inline lean_object * lean_box(size_t n) { return (lean_object*)(((size_t)(n) << 1) | 1); }
 static inline size_t lean_unbox(lean_object * o) { return (size_t)(o) >> 1; }
 
-LEAN_EXPORT void lean_set_exit_on_panic(bool flag);
-/* Enable/disable panic messages */
-LEAN_EXPORT void lean_set_panic_messages(bool flag);
-
 LEAN_EXPORT lean_object * lean_panic_fn(lean_object * default_val, lean_object * msg);
 
 LEAN_EXPORT __attribute__((noreturn)) void lean_internal_panic(char const * msg);
@@ -308,7 +301,9 @@ static inline unsigned lean_get_slot_idx(unsigned sz) {
 LEAN_EXPORT void * lean_alloc_small(unsigned sz, unsigned slot_idx);
 LEAN_EXPORT void lean_free_small(void * p);
 LEAN_EXPORT unsigned lean_small_mem_size(void * p);
-LEAN_EXPORT void lean_inc_heartbeat(void);
+
+// Stub
+static inline void lean_inc_heartbeat(void) { }
 
 #ifndef __cplusplus
 void * malloc(size_t);  // avoid including big `stdlib.h`
@@ -409,26 +404,15 @@ static inline bool lean_has_rc(lean_object * o) {
     return o->m_rc != 0;
 }
 
-static inline _Atomic(int) * lean_get_rc_mt_addr(lean_object* o) {
-    return (_Atomic(int)*)(&(o->m_rc));
-}
-
-LEAN_EXPORT void lean_inc_ref_cold(lean_object * o);
-LEAN_EXPORT void lean_inc_ref_n_cold(lean_object * o, unsigned n);
-
 static inline void lean_inc_ref(lean_object * o) {
     if (LEAN_LIKELY(lean_is_st(o))) {
         o->m_rc++;
-    } else if (o->m_rc != 0) {
-        lean_inc_ref_cold(o);
     }
 }
 
 static inline void lean_inc_ref_n(lean_object * o, size_t n) {
     if (LEAN_LIKELY(lean_is_st(o))) {
         o->m_rc += n;
-    } else if (o->m_rc != 0) {
-        lean_inc_ref_n_cold(o, n);
     }
 }
 
@@ -474,19 +458,11 @@ static inline lean_ref_object * lean_to_ref(lean_object * o) { assert(lean_is_re
 static inline lean_external_object * lean_to_external(lean_object * o) { assert(lean_is_external(o)); return (lean_external_object*)(o); }
 
 static inline bool lean_is_exclusive(lean_object * o) {
-    if (LEAN_LIKELY(lean_is_st(o))) {
-        return o->m_rc == 1;
-    } else {
-        return false;
-    }
+    return o->m_rc == 1;
 }
 
 static inline bool lean_is_shared(lean_object * o) {
-    if (LEAN_LIKELY(lean_is_st(o))) {
-        return o->m_rc > 1;
-    } else {
-        return false;
-    }
+    return o->m_rc > 1;
 }
 
 LEAN_EXPORT void lean_mark_mt(lean_object * o);
@@ -2085,6 +2061,9 @@ static inline lean_obj_res lean_runtime_mark_persistent(lean_obj_arg a) {
     lean_mark_persistent(a);
     return a;
 }
+
+// Stub
+static inline void lean_set_panic_messages(bool flag) { }
 
 #ifdef __cplusplus
 }

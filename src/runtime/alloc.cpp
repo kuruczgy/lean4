@@ -463,29 +463,8 @@ void initialize_alloc() {
 void finalize_alloc() {
 }
 
-#ifndef LEAN_SMALL_ALLOCATOR
-LEAN_THREAD_VALUE(uint64_t, g_heartbeat, 0);
-#endif
-
-/* Helper function for increasing heartbeat even when LEAN_SMALL_ALLOCATOR is not defined */
-extern "C" LEAN_EXPORT void lean_inc_heartbeat() {
-#ifdef LEAN_SMALL_ALLOCATOR
-    if (g_heap)
-        g_heap->m_heartbeat++;
-#else
-    g_heartbeat++;
-#endif
-}
-
 uint64_t get_num_heartbeats() {
-#ifdef LEAN_SMALL_ALLOCATOR
-    if (g_heap)
-        return g_heap->m_heartbeat;
-    else
-        return 0;
-#else
-    return g_heartbeat;
-#endif
+    return 0;
 }
 
 }

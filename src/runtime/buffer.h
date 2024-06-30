@@ -32,7 +32,6 @@ protected:
 
     void set_capacity(size_t new_capacity) {
         lean_assert(new_capacity > m_capacity);
-        // char * new_buffer_char = new char[sizeof(T) * new_capacity];
         char * new_buffer_char = (char *)malloc(sizeof(T) * new_capacity);
         T * new_buffer         = reinterpret_cast<T*>(new_buffer_char);
         std::uninitialized_copy(m_buffer, m_buffer + m_pos, new_buffer);

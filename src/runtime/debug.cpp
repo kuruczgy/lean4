@@ -21,14 +21,12 @@ Author: Leonardo de Moura
 namespace lean {
 static volatile bool           g_has_violations     = false;
 static volatile bool           g_enable_assertions  = true;
-static std::set<std::string> * g_enabled_debug_tags = nullptr;
 
 void initialize_debug() {
     // lazy initialization
 }
 
 void finalize_debug() {
-    delete g_enabled_debug_tags;
 }
 
 bool has_violations() {
@@ -51,19 +49,12 @@ void notify_assertion_violation(const char * fileName, int line, const char * co
     std::cerr.flush();
 }
 
-void enable_debug(char const * tag) {
-    if (!g_enabled_debug_tags)
-        g_enabled_debug_tags = new std::set<std::string>();
-    g_enabled_debug_tags->insert(tag);
-}
+void enable_debug(char const * tag) { }
 
-void disable_debug(char const * tag) {
-    if (g_enabled_debug_tags)
-        g_enabled_debug_tags->erase(tag);
-}
+void disable_debug(char const * tag) { }
 
 bool is_debug_enabled(const char * tag) {
-    return g_enabled_debug_tags && g_enabled_debug_tags->find(tag) != g_enabled_debug_tags->end();
+    return false;
 }
 
 static bool g_debug_dialog = true;

@@ -45,7 +45,6 @@ inline size_t unbox(object * o) { return lean_unbox(o); }
 inline bool is_mt_heap_obj(object * o) { return lean_is_mt(o); }
 inline bool is_st_heap_obj(object * o) { return lean_is_st(o); }
 inline bool is_heap_obj(object * o) { return is_st_heap_obj(o) || is_mt_heap_obj(o); }
-inline void mark_mt(object * o) { lean_mark_mt(o); }
 inline bool is_shared(object * o) { return lean_is_shared(o); }
 inline bool is_exclusive(object * o) { return lean_is_exclusive(o); }
 inline void inc_ref(object * o) { lean_inc_ref(o); }
@@ -471,9 +470,4 @@ inline obj_res st_ref_get(b_obj_arg r, obj_arg w) { return lean_st_ref_get(r, w)
 inline obj_res st_ref_set(b_obj_arg r, obj_arg v, obj_arg w) { return lean_st_ref_set(r, v, w); }
 inline obj_res st_ref_reset(b_obj_arg r, obj_arg w) { return lean_st_ref_reset(r, w); }
 inline obj_res st_ref_swap(b_obj_arg r, obj_arg v, obj_arg w) { return lean_st_ref_swap(r, v, w); }
-
-// =======================================
-// Module initialization/finalization
-void initialize_object();
-void finalize_object();
 }
