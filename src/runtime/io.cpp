@@ -63,77 +63,48 @@ extern "C" LEAN_EXPORT obj_res lean_io_initializing(obj_arg) {
     return io_result_mk_ok(box(g_initializing));
 }
 
-static lean_external_class * g_io_handle_external_class = nullptr;
-
-static void io_handle_finalizer(void * h) {
-    // There is no sensible way to handle errors here; in particular, we should
-    // not panic as finalizing a handle that already is in an invalid state
-    // (broken pipe etc.) should work and not terminate the process. The same
-    // decision was made for `std::fs::File` in the Rust stdlib.
-    fclose(static_cast<FILE *>(h));
-}
-
-static void io_handle_foreach(void * /* mod */, b_obj_arg /* fn */) {
-}
-
-lean_object * io_wrap_handle(FILE *hfile) {
-    return lean_alloc_external(g_io_handle_external_class, hfile);
-}
-
 extern "C" obj_res lean_stream_of_handle(obj_arg h);
 
 static object * g_stream_stdin  = nullptr;
 static object * g_stream_stdout = nullptr;
 static object * g_stream_stderr = nullptr;
-MK_THREAD_LOCAL_GET(object_ref, get_stream_current_stdin,  g_stream_stdin);
-MK_THREAD_LOCAL_GET(object_ref, get_stream_current_stdout, g_stream_stdout);
-MK_THREAD_LOCAL_GET(object_ref, get_stream_current_stderr, g_stream_stderr);
 
 /* getStdin : BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_stdin(obj_arg /* w */) {
-    return io_result_mk_ok(get_stream_current_stdin().to_obj_arg());
+    return io_result_mk_ok(g_stream_stdin);
 }
 
 /* getStdout : BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_stdout(obj_arg /* w */) {
-    return io_result_mk_ok(get_stream_current_stdout().to_obj_arg());
+    return io_result_mk_ok(g_stream_stdout);
 }
 
 /* getStderr : BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_stderr(obj_arg /* w */) {
-    return io_result_mk_ok(get_stream_current_stderr().to_obj_arg());
+    return io_result_mk_ok(g_stream_stderr);
 }
 
 /* setStdin  : FS.Stream -> BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_set_stdin(obj_arg h, obj_arg /* w */) {
-    object_ref & x = get_stream_current_stdin();
-    object * r = x.steal();
-    x = object_ref(h);
-    return io_result_mk_ok(r);
+    abort();
 }
 
 /* setStdout  : FS.Stream -> BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_set_stdout(obj_arg h, obj_arg /* w */) {
-    object_ref & x = get_stream_current_stdout();
-    object * r = x.steal();
-    x = object_ref(h);
-    return io_result_mk_ok(r);
+    abort();
 }
 
 /* setStderr  : FS.Stream -> BaseIO FS.Stream */
 extern "C" LEAN_EXPORT obj_res lean_get_set_stderr(obj_arg h, obj_arg /* w */) {
-    object_ref & x = get_stream_current_stderr();
-    object * r = x.steal();
-    x = object_ref(h);
-    return io_result_mk_ok(r);
+    abort();
 }
 
 static FILE * io_get_handle(lean_object * hfile) {
-    return static_cast<FILE *>(lean_get_external_data(hfile));
+    return (FILE *)hfile;
 }
 
 extern "C" LEAN_EXPORT obj_res lean_decode_io_error(int errnum, b_obj_arg fname) {
-    return io_result_mk_error("TODO lean_decode_io_error");
+    abort();
 }
 
 /* IO.setAccessRights (filename : @& String) (mode : UInt32) : IO Handle */
@@ -650,24 +621,12 @@ extern "C" LEAN_EXPORT obj_res lean_io_exit(uint8_t code, obj_arg /* w */) {
 }
 
 void initialize_io() {
-    // g_io_error_nullptr_read = lean_mk_io_user_error(mk_string("null reference read"));
-    // mark_persistent(g_io_error_nullptr_read);
-    g_io_handle_external_class = lean_register_external_class(io_handle_finalizer, io_handle_foreach);
-#if defined(LEAN_WINDOWS)
-    _setmode(_fileno(stdout), _O_BINARY);
-    _setmode(_fileno(stderr), _O_BINARY);
-    _setmode(_fileno(stdin), _O_BINARY);
-#endif
-    g_stream_stdout = lean_stream_of_handle(io_wrap_handle(stdout));
+    g_stream_stdout = lean_stream_of_handle((obj_arg)stdout);
     mark_persistent(g_stream_stdout);
-    g_stream_stderr = lean_stream_of_handle(io_wrap_handle(stderr));
+    g_stream_stderr = lean_stream_of_handle((obj_arg)stderr);
     mark_persistent(g_stream_stderr);
-    g_stream_stdin  = lean_stream_of_handle(io_wrap_handle(stdin));
+    g_stream_stdin  = lean_stream_of_handle((obj_arg)stdin);
     mark_persistent(g_stream_stdin);
-#if !defined(LEAN_WINDOWS) && !defined(LEAN_EMSCRIPTEN)
-    // We want to handle SIGPIPE ourselves
-    lean_always_assert(signal(SIGPIPE, SIG_IGN) != SIG_ERR);
-#endif
 }
 
 void finalize_io() {

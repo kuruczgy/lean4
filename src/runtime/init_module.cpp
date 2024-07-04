@@ -13,6 +13,7 @@ Author: Leonardo de Moura
 namespace lean {
 extern "C" LEAN_EXPORT void lean_initialize_runtime_module() {
     initialize_alloc();
+    initialize_io();
     initialize_thread();
     initialize_process();
 }
@@ -22,6 +23,7 @@ void initialize_runtime_module() {
 void finalize_runtime_module() {
     finalize_process();
     finalize_thread();
+    finalize_io();
     finalize_alloc();
 }
 }
